@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&family=Permanent+Marker&display=swap');
+
+nav, .header, .page-footer {
+    font-size: 60px;
+    font-family: 'Indie Flower', cursive;
+    background-color: #40c4ff
+}
+
+.header {
+    text-align: center;
+}
+
+.page-footer {
+    font-size: 20px;
+}
+
+.logo {
+    width: 5%;
+    max-width: 100px;
+    margin-left: 30px;
+    margin-top: 30px;
+}
+
+.mycard {
+    margin-top: 30px;
+}
+
+.auth-card {
+    padding: 20px;
+    text-align: center;
+    max-width: 400px;
+    margin: 10px auto;
+    margin-bottom: 50px;
+}
+
+#input-comments:focus {
+    border-bottom: 1px solid teal !important;
+    box-shadow: 0 1px 0 0 teal !important;
+}
+
+.center {
+    display: block;
+    margin-top: 25px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
+
+.waves-effect{
+    color: rgb(0, 0, 0);
+    background-color: #40c4ff;
+    margin-right: 0px;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 20px;
+}
