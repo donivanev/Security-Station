@@ -12,9 +12,9 @@ router.get('/', (req, res) => {
 })
 
 router.post('/register', (req, res) => {
-    const {firstName, lastName, email, password} = req.body
+    const {firstName, lastName, email, password, photo} = req.body
     
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !photo) {
         return res.status(422).json({error: "Please fill all the fields"})
     }
 
@@ -25,7 +25,7 @@ router.post('/register', (req, res) => {
         }
 
         bcrypt.hash(password, 12).then(hashedpassword => {
-            const user = new User({firstName, lastName, email, password: hashedpassword})
+            const user = new User({firstName, lastName, email, password: hashedpassword, photo})
             user.save().then(user => {res.json({message: "Successfully registered!"})}).catch(err => console.log(err))
         })
     })

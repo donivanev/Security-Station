@@ -53,3 +53,7 @@ nav, .header, .page-footer {
     font-family: 'Permanent Marker', cursive;
     font-size: 20px;
 }
+
+.btn {
+    background-color: 'white';
+}

@@ -8,6 +8,7 @@ import Home from './components/screens/home'
 import About from './components/screens/about'
 import Login from './components/screens/login'
 import Register from './components/screens/register'
+import Monitor from './components/screens/monitor'
 import './App.css'
 
 export const UserContext = createContext()
@@ -35,6 +36,7 @@ const Routing = () => {
         <Route path='/about' element={<About />}></Route>
         <Route path='/register' element={<Register />}></Route>
         <Route path='/login' element={<Login />}></Route>
+        <Route path='/monitor' element={<Monitor />}></Route>
       </Routes>
   )
 }
