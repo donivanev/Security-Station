@@ -68,8 +68,7 @@ while True:
     # img_resp = urllib.request.urlopen(url)
     # imgnp = np.array(bytearray(img_resp.read()), dtype = np.uint8)
     # img = cv2.imdecode(imgnp, -1)
-    #print(img)
-    #img = captureScreen()
+    # img = captureScreen()
     imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)
     imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)
  

@@ -57,3 +57,7 @@ nav, .header, .page-footer {
 .btn {
     background-color: 'white';
 }
+
+.records {
+    margin: 50px;
+}
