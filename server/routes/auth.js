@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const {JWT_SECRET} = require('../keys')
 const requireLogin = require('../middleware/requireLogin')
+const fs = require('fs')
+const csv = require('fast-csv')
 
 router.get('/', (req, res) => {
     res.send('Hello!')
@@ -66,6 +68,16 @@ router.post('/login', (req, res) => {
     .catch(err => {
         console.log(err)
     })
+})
+
+router.get('/monitor', (req, res) => {
+    const data = []
+    
+    fs.createReadStream('C:/Users/Fujitsu/Documents/Arduino/Security-Station/Attendance.csv')
+    .pipe(csv.parse())
+    .on('error', error => console.error(error))
+    .on('data', row => data.push(row))
+    .on('end', () => res.json(data))
 })
 
 module.exports = router

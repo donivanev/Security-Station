@@ -19,7 +19,7 @@ const Routing = () => {
   const {state, dispatch} = useContext(UserContext)
 
   useEffect(() => {
-    console.log(JSON.parse(localStorage.getItem('user')))
+    //console.log(JSON.parse(localStorage.getItem('user')))
     const user = JSON.parse(localStorage.getItem('user'))
 
     if (user) {
