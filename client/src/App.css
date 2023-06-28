@@ -6,7 +6,7 @@ nav, .header, .page-footer {
     background-color: #40c4ff
 }
 
-.header {
+.header, #home {
     text-align: center;
 }
 
@@ -60,4 +60,16 @@ nav, .header, .page-footer {
 
 .records {
     margin: 50px;
+}
+
+.card-content p {
+    margin-right: 50px;
+}
+
+#home-pic {
+    height: 200px;
+    width: 200px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }

@@ -1,3 +1,4 @@
+import requests
 import numpy as np
 import pandas as pd
 import cv2
@@ -5,6 +6,7 @@ import os
 import face_recognition
 from datetime import datetime, timedelta
 from google.cloud import storage
+import serial
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 client = storage.Client(project='esp32cam-photos')
@@ -15,17 +17,17 @@ for blob in bucket.list_blobs(prefix='users'):
    if blob.name != 'users/':
       photo.download_to_filename('C:/Users/Fujitsu/Documents/Arduino/CameraProject/' + blob.name)
  
-path = r'C:/Users/Fujitsu/Documents/Arduino/CameraProject/users'
-url = 'http://192.168.100.12'
+path = r'C:/Users/Fujitsu/Documents/Arduino/Security-Station/users'
+url = 'http://192.168.1.9'
 
-#if 'Attendance.csv' in os.listdir(os.path.join(os.getcwd(),'attendance')):
-# if 'Attendance.csv' in os.listdir('C:\\Users\\Fujitsu\\Documents\\Arduino\\CameraProject\\'):
-#     print("there is..")
-#     os.remove("Attendance.csv")
-# else:
-#     df = pd.DataFrame(list())
-#     df.to_csv("Attendance.csv")
- 
+if 'Attendance.csv' in os.listdir(r'C:/Users/Fujitsu/Documents/Arduino/Security-Station'):
+    print("there is..")
+    os.remove("Attendance.csv")
+else:
+    df = pd.DataFrame(list())
+    df.to_csv("Attendance.csv")
+
+name = ""
 images = []
 classNames = []
 myList = os.listdir(path)
@@ -80,8 +82,9 @@ while True:
         faceDis = face_recognition.face_distance(encodeListKnown, encodeFace)
         print(faceDis)
         matchIndex = np.argmin(faceDis)
+        name = ""
  
-        if matches[matchIndex] and counter < 10:
+        if matches[matchIndex] and counter < 5:
             name = classNames[matchIndex].upper()
             print(name)
             y1, x2, y2, x1 = faceLoc
@@ -89,13 +92,19 @@ while True:
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(img, (x1, y2 - 35), (x2, y2), (0, 255, 0), cv2.FILLED)
             cv2.putText(img, name, (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
-            markAttendance(name)
-
+            # markAttendance(name)
+        
         counter += 1
 
     cv2.imshow('Webcam', img)
 
-    if (counter == 7):
+    if (counter == 5):
+        if name != "":
+            markAttendance(name)
+            requests.post('http://192.168.1.3:8080/api/postdata', data = '{"data": "yes"}')
+        else:
+            requests.post('http://192.168.1.3:8080/api/postdata', data = '{"data": "no"}')
+
         break
 
     key = cv2.waitKey(5)
