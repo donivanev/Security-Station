@@ -6,7 +6,13 @@ import os
 import face_recognition
 from datetime import datetime, timedelta
 from google.cloud import storage
-import serial
+
+# if 'Attendance.csv' in os.listdir(r'C:/Users/Fujitsu/Documents/Arduino/Security-Station'):
+#     print("there is..")
+#     os.remove("Attendance.csv")
+# else:
+#     df = pd.DataFrame(list())
+#     df.to_csv("Attendance.csv")
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 client = storage.Client(project='esp32cam-photos')
@@ -19,13 +25,6 @@ for blob in bucket.list_blobs(prefix='users'):
  
 path = r'C:/Users/Fujitsu/Documents/Arduino/Security-Station/users'
 url = 'http://192.168.1.9'
-
-if 'Attendance.csv' in os.listdir(r'C:/Users/Fujitsu/Documents/Arduino/Security-Station'):
-    print("there is..")
-    os.remove("Attendance.csv")
-else:
-    df = pd.DataFrame(list())
-    df.to_csv("Attendance.csv")
 
 name = ""
 images = []
@@ -103,6 +102,7 @@ while True:
             markAttendance(name)
             requests.post('http://192.168.1.3:8080/api/postdata', data = '{"data": "yes"}')
         else:
+            markAttendance('Alert!')
             requests.post('http://192.168.1.3:8080/api/postdata', data = '{"data": "no"}')
 
         break

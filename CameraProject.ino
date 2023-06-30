@@ -1,7 +1,7 @@
-#include <ArduinoJson.h>
 #include <Arduino_JSON.h>
-#include "credentials.h"
+#include <EEPROM.h>
 #include <WiFi.h>
+#include "credentials.h"
 #include "esp_camera.h"
 #include "Arduino.h"
 #include "soc/soc.h"           // Disable brownout problems
@@ -12,8 +12,6 @@
 #include <Firebase_ESP_Client.h>
 #include <HTTPClient.h>
 #include <addons/TokenHelper.h> //Provide the token generation process info.
-#include "SoundData.h"
-#include "XT_DAC_Audio.h"
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
@@ -36,11 +34,10 @@
 #define USER_EMAIL "dok246@gmail.com"
 #define USER_PASSWORD "secstat135"
 #define STORAGE_BUCKET_ID "esp32cam-photos.appspot.com"
-#define FILE_PHOTO "/data/photo.jpg"
-#define SOUND_SPEED 0.034
+#define PHOTO_PATH "/data/alert"
+#define EEPROM_SIZE 1
 
 HTTPClient http;
-//AsyncWebServer server(82);
 const char* ssid = ssidKey;
 const char* password = passKey;
 char apiUrlGet[] = "http://192.168.1.3:8080/api/getdata/last";
@@ -50,22 +47,20 @@ bool taskCompleted = false;
 bool matchFace = true;
 bool activeRelay = false;
 int detection = 0;
-const int relayPin = 2;
+const int buzzPin = 12;
 const int pirPin = 13;
 const int gasPin = 14;
-long duration = 0;
+const int relayPin = 15;
 long prevMillis = 0;
-float distance = 0.0;
 int interval = 5000;
-uint32_t DemoCounter = 0;
+int alertNumber = 0;
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig configF;
-XT_Wav_Class Sound(sample);
-XT_DAC_Audio_Class DacAudio(12, 0);
+String filePhoto = "";
 
 bool checkPhoto(fs::FS &fs) {
-  File f_pic = fs.open(FILE_PHOTO);
+  File f_pic = fs.open(filePhoto);
   unsigned int pic_sz = f_pic.size();
   return (pic_sz > 100);
 }
@@ -96,8 +91,11 @@ void capturePhotoSaveSpiffs(void) {
       return;
     }
 
-    Serial.printf("Picture file name: %s\n", FILE_PHOTO);
-    File file = SPIFFS.open(FILE_PHOTO, FILE_WRITE);
+    alertNumber = EEPROM.read(0) + 1;
+    filePhoto = PHOTO_PATH + String(alertNumber) + ".jpg";
+
+    Serial.printf("Picture file name: %s\n", filePhoto);
+    File file = SPIFFS.open(filePhoto, FILE_WRITE);
     // Insert the data in the photo file
     if (!file) {
       Serial.println("Failed to open file in writing mode");
@@ -105,10 +103,12 @@ void capturePhotoSaveSpiffs(void) {
     else {
       file.write(fb->buf, fb->len); // payload (image), payload length
       Serial.print("The picture has been saved in ");
-      Serial.print(FILE_PHOTO);
+      Serial.print(filePhoto);
       Serial.print(" - Size: ");
       Serial.print(file.size());
       Serial.println(" bytes");
+      EEPROM.write(0, alertNumber);
+      EEPROM.commit();
     }
 
     file.close();
@@ -126,12 +126,14 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
-  //pinMode(pirPin, INPUT);
+  pinMode(pirPin, INPUT);
   pinMode(relayPin, OUTPUT);
-  digitalWrite(relayPin, LOW);
-  //initSPIFFS();
+  //digitalWrite(relayPin, LOW);
+  initSPIFFS();
+  pinMode(buzzPin, OUTPUT);
 
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+  EEPROM.begin(EEPROM_SIZE);
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -221,14 +223,14 @@ void setup() {
 
   http.end();
 
-  // configF.api_key = API_KEY;
-  // auth.user.email = USER_EMAIL;
-  // auth.user.password = USER_PASSWORD;
-  // //Assign the callback function for the long running token generation task
-  // configF.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
+  configF.api_key = API_KEY;
+  auth.user.email = USER_EMAIL;
+  auth.user.password = USER_PASSWORD;
+  //Assign the callback function for the long running token generation task (see addons/TokenHelper.h)
+  configF.token_status_callback = tokenStatusCallback;
 
-  // Firebase.begin(&configF, &auth);
-  // Firebase.reconnectWiFi(true);
+  Firebase.begin(&configF, &auth);
+  Firebase.reconnectWiFi(true);
 
   delay(12000);
 
@@ -255,65 +257,50 @@ void setup() {
 
   http.end();
 
-  // server.on("/data", HTTP_POST, [](AsyncWebServerRequest * request){}, NULL,
-  //           [](AsyncWebServerRequest * request, uint8_t *data, size_t len, size_t index, size_t total) {
-  //   Serial.println("POST request received");
-  //   StaticJsonDocument<20> JSONBuffer;
-  //   deserializeJson(JSONBuffer, data);
-  //   JsonObject obj = JSONBuffer.as<JsonObject>();
-  //   String response = obj["data"];
-  //   assignResponse(response);
-  //   request->send(200, "text/plain", "Data from esp32cam image processing");
-  // });
-
-  //server.begin();
-
   pinMode(4, OUTPUT);
   digitalWrite(4, LOW);
   rtc_gpio_hold_en(GPIO_NUM_4);
 
-  // if (response == "yes" && activeRelay == false) {
-  //   activeRelay = true;
-  //   digitalWrite(relayPin, HIGH);
-  //   // delay(800);
-  //   // prevMillis = millis();
-  // }
-  // else {
-  //   // say access denied, make a photo, upload it in firebase -> send an email
-  //   DacAudio.FillBuffer();
+  if (response == "yes" && activeRelay == false) {
+    activeRelay = true;
+    digitalWrite(relayPin, HIGH);
+    Serial.println("here");
+    // delay(800);
+    // prevMillis = millis();
+  }
+  else {
+    //buzzer sound, make a photo, upload it in firebase -> send an email
 
-  //   if(!Sound.Playing) {
-  //     DacAudio.Play(&Sound);
-  //   }
+    digitalWrite(buzzPin, HIGH);
+    delay(2000);
+    digitalWrite(buzzPin, LOW);
 
-  //   Serial.println(DemoCounter++);
-  //   capturePhotoSaveSpiffs();
+    capturePhotoSaveSpiffs();
 
-  //   if (Firebase.ready() && !taskCompleted) {
-  //     taskCompleted = true;
-  //     Serial.print("Uploading picture... ");
+    if (Firebase.ready() && !taskCompleted) {
+      taskCompleted = true;
+      Serial.print("Uploading picture... ");
 
-  //     //MIME type should be valid to avoid the download problem.
-  //     //The file systems for flash and SD/SDMMC can be changed in FirebaseFS.h.
-  //     if (Firebase.Storage.upload(&fbdo, STORAGE_BUCKET_ID, FILE_PHOTO, mem_storage_type_flash, FILE_PHOTO, "image/jpeg" /* mime type */)) {
-  //       Serial.printf("\nDownload URL: %s\n", fbdo.downloadURL().c_str());
-  //     }
-  //     else {
-  //       Serial.println(fbdo.errorReason());
-  //     }
-  //   }
-  // }
+      //MIME type should be valid to avoid the download problem. The file systems for flash and SD/SDMMC can be changed in FirebaseFS.h.
+      if (Firebase.Storage.upload(&fbdo, STORAGE_BUCKET_ID, filePhoto, mem_storage_type_flash, filePhoto, "image/jpeg" /* mime type */)) {
+        Serial.printf("\nDownload URL: %s\n", fbdo.downloadURL().c_str());
+      }
+      else {
+        Serial.println(fbdo.errorReason());
+      }
+    }
+  }
 
-  // delay(5000);
+  delay(5000);
   
-  // if (activeRelay == true) {//&& millis() - prevMillis > interval) {
-  //   activeRelay = false;
-  //   matchFace = false; 
-  //   digitalWrite(relayPin, LOW);
-  // }
+  if (activeRelay == true) {//&& millis() - prevMillis > interval) {
+    activeRelay = false;
+    matchFace = false; 
+    digitalWrite(relayPin, LOW);
+  }
 
-  // esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);
-  // esp_deep_sleep_start();
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);
+  esp_deep_sleep_start();
 }
 
 void loop() {
