@@ -21,7 +21,7 @@ bucket = client.get_bucket('esp32cam-photos.appspot.com')
 for blob in bucket.list_blobs(prefix='users'):
    photo = storage.Blob(blob.name, bucket)
    if blob.name != 'users/':
-      photo.download_to_filename('C:/Users/Fujitsu/Documents/Arduino/CameraProject/' + blob.name)
+      photo.download_to_filename('C:/Users/Fujitsu/Documents/Arduino/Security-Station/' + blob.name)
  
 path = r'C:/Users/Fujitsu/Documents/Arduino/Security-Station/users'
 url = 'http://192.168.1.9'
